@@ -1,0 +1,24 @@
+{application, iam_auth,
+ [{description, "IAM auth client"},
+  {vsn, git},
+  {registered, []},
+  {mod, { iam_auth_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+    couch_log,
+    config,
+    b64url,
+    crypto,
+    epep,
+    public_key,
+    jwtf,
+    ibrowse
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {maintainers, []},
+  {licenses, []},
+  {links, []}
+ ]}.
