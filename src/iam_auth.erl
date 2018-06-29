@@ -8,7 +8,8 @@
     req/4,
     req_session_cookie/1,
     session_req/3,
-    session_req/4
+    session_req/4,
+    session_req/5
 ]).
 
 
@@ -39,7 +40,11 @@ session_req(Cookie, Url, Method) ->
 
 
 session_req(Cookie, Url, Method, Body) ->
-    Headers = [{"Cookie", Cookie} | json_headers()],
+    session_req(Cookie, Url, Method, Body, [])
+
+
+session_req(Cookie, Url, Method, Body, Headers0) ->
+    Headers = [{"Cookie", Cookie} | json_headers()] ++ Headers0,
     req(Url, Method, Body, Headers).
 
 
