@@ -6,7 +6,9 @@
     req/2,
     req/3,
     req/4,
-    req_session_cookie/1,
+    auth_session_cookie/3,
+    iam_session_cookie/1,
+    default_headers/0,
     session_req/3,
     session_req/4,
     session_req/5
@@ -26,8 +28,7 @@ req(Url, Method) ->
 
 
 req(Url, Method, Body) ->
-    Headers = json_headers() ++ iam_auth_server:auth_headers(),
-    req(Url, Method, Body, Headers).
+    req(Url, Method, Body, default_headers()).
 
 
 req(Url, Method, Body, Headers) ->
@@ -40,7 +41,7 @@ session_req(Cookie, Url, Method) ->
 
 
 session_req(Cookie, Url, Method, Body) ->
-    session_req(Cookie, Url, Method, Body, [])
+    session_req(Cookie, Url, Method, Body, []).
 
 
 session_req(Cookie, Url, Method, Body, Headers0) ->
@@ -48,19 +49,35 @@ session_req(Cookie, Url, Method, Body, Headers0) ->
     req(Url, Method, Body, Headers).
 
 
-req_session_cookie(Url) ->
-    {ok, 200, Headers, {[{<<"ok">>,true}]}} = post_token(Url),
-    Cookie = proplists:get_value("Set-Cookie", Headers),
-    hd(string:tokens(Cookie, ";")).
+iam_session_cookie(Url) ->
+    Body = "access_token=" ++ iam_auth_server:token(),
+    session_cookie(Url ++ "/_iam_session", Body).
+
+
+auth_session_cookie(Url, User, Pass) ->
+    Body = "name=" ++ User ++ "&password=" ++ Pass,
+    session_cookie(Url ++ "/_session", Body).
+
+
+default_headers() ->
+    json_headers() ++ iam_auth_server:auth_headers().
 
 
 %% private
 
 
-post_token(Url) ->
+json_headers() ->
+    [
+        {"Accept", "application/json"},
+        {"Content-Type", "application/json"}
+    ].
+
+
+session_cookie(Url, Body) ->
     Headers = [{"Content-Type", "application/x-www-form-urlencoded"}],
-    Body = "access_token=" ++ iam_auth_server:token(),
-    send_req(Url, post, Body, Headers).
+    {ok, 200, RspHeaders, _} = send_req(Url, post, Body, Headers),
+    Cookie = proplists:get_value("Set-Cookie", RspHeaders),
+    hd(string:tokens(Cookie, ";")).
 
 
 send_req(Url, Method, Body, Headers) ->
@@ -73,8 +90,3 @@ send_req(Url, Method, Body, Headers) ->
     end.
 
 
-json_headers() ->
-    [
-        {"Accept", "application/json"},
-        {"Content-Type", "application/json"}
-    ].
