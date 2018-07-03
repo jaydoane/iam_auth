@@ -98,7 +98,10 @@ terminate(_Reason, _State) ->
 next_refresh(Expiration) ->
     Val = max(?REFRESH_ERROR_DELAY,
         (Expiration - epep_util:now(sec) - 60) * 1000),
-    couch_log:info("~p next_refresh ~p", [?MODULE, Val]),
+    case Val of ?REFRESH_ERROR_DELAY ->
+        couch_log:info("~p next_refresh ~P", [?MODULE, Val]);
+        _ -> ok
+    end,
     Val.
 
 
