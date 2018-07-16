@@ -26,7 +26,7 @@
 }).
 
 
--define(REFRESH_ERROR_DELAY, 500).
+-define(REFRESH_ERROR_DELAY, 2000).
 
 
 start_link() ->
