@@ -12,6 +12,7 @@
     crypto,
     epep,
     public_key,
+    jiffy,
     jwtf,
     ibrowse
    ]},

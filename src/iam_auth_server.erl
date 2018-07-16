@@ -113,7 +113,7 @@ refresh(State) ->
     Opts = [{response_format, binary}],
     case ibrowse:send_req(Url, ReqHeaders, post, ReqBody, Opts) of
         {ok, "200", _, RspBody} ->
-            {Props} = dev:decode(RspBody),
+            {Props} = jiffy:decode(RspBody),
             Token = proplists:get_value(<<"access_token">>, Props),
             %% {ok, {Claims}} = epep:jwt_decode(Token),
             %% couch_log:info("~p claims ~p", [?MODULE, Claims]),
