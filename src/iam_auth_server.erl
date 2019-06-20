@@ -108,18 +108,12 @@ next_refresh(Expiration) ->
 refresh(State) ->
     Creds = config:get("epep", "token_creds", ""),
     Url = config:get("epep", "token_url"),
-    {ReqHeaders, ReqBody} = epep_util:token_req_headers_body(
-        State#state.api_key, Creds),
-    Opts = [{response_format, binary}],
-    case ibrowse:send_req(Url, ReqHeaders, post, ReqBody, Opts) of
-        {ok, "200", _, RspBody} ->
-            {Props} = jiffy:decode(RspBody),
-            Token = proplists:get_value(<<"access_token">>, Props),
+    case iam_auth:req_token(Url, Creds, State#state.api_key) of
+        #{<<"access_token">> := Token, <<"expiration">> := Expiration} ->
             %% {ok, {Claims}} = epep:jwt_decode(Token),
             %% couch_log:info("~p claims ~p", [?MODULE, Claims]),
-            Expiration = proplists:get_value(<<"expiration">>, Props),
-            couch_log:info("~p new access token expires ~p",
-                [?MODULE, Expiration]),
+            couch_log:info("~p new access token expires in ~p sec",
+                [?MODULE, Expiration - epep_util:now(sec)]),
             State#state{expiration = Expiration, token = binary_to_list(Token)};
         Else ->
             couch_log:warning("~p refresh error ~p", [?MODULE, Else]),

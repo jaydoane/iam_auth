@@ -6,6 +6,7 @@
     req/2,
     req/3,
     req/4,
+    req_token/3,
     auth_session_cookie/3,
     iam_session_cookie/1,
     default_headers/0,
@@ -61,6 +62,17 @@ auth_session_cookie(Url, User, Pass) ->
 
 default_headers() ->
     json_headers() ++ iam_auth_server:auth_headers().
+
+
+req_token(Url, Creds, ApiKey) ->
+    {ReqHeaders, ReqBody} = epep_util:token_req_headers_body(ApiKey, Creds),
+    Opts = [{response_format, binary}],
+    case ibrowse:send_req(Url, ReqHeaders, post, ReqBody, Opts) of
+        {ok, "200", _, RspBody} ->
+            jiffy:decode(RspBody, [return_maps]);
+        Error ->
+            Error
+    end.
 
 
 %% private
