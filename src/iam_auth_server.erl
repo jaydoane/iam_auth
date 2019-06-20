@@ -93,8 +93,6 @@ terminate(_Reason, _State) ->
 
 %% private
 
--compile(export_all).
-
 next_refresh(Expiration) ->
     Val = max(?REFRESH_ERROR_DELAY,
         (Expiration - epep_util:now(sec) - 60) * 1000),
