@@ -96,7 +96,8 @@ send_req(Url, Method, Body, Headers) ->
     Opts = [{response_format, list}],
     case ibrowse:send_req(Url, Headers, Method, Body, Opts) of
         {ok, Code, RspHeaders, RspBody} ->
-            {ok, list_to_integer(Code), RspHeaders, jiffy:decode(RspBody)};
+            {ok, list_to_integer(Code), RspHeaders,
+                jiffy:decode(RspBody, [return_maps])};
         Else ->
             Else
     end.
