@@ -33,8 +33,8 @@ req(Url, Method, Body) ->
 
 
 req(Url, Method, Body, Headers) ->
-    {ok, Code, _, RspBody} = send_req(Url, Method, Body, Headers),
-    {ok, Code, RspBody}.
+    {ok, Code, RspHeaders, RspBody} = send_req(Url, Method, Body, Headers),
+    {ok, Code, RspHeaders, RspBody}.
 
 
 session_req(Cookie, Url, Method) ->
