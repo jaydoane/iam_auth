@@ -29,10 +29,11 @@ req(Url, Method) ->
 
 
 req(Url, Method, Body) ->
-    req(Url, Method, Body, default_headers()).
+    req(Url, Method, Body, []).
 
 
-req(Url, Method, Body, Headers) ->
+req(Url, Method, Body, Headers0) ->
+    Headers = default_headers() ++ Headers0,
     {ok, Code, RspHeaders, RspBody} = send_req(Url, Method, Body, Headers),
     {ok, Code, RspHeaders, RspBody}.
 
