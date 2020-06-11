@@ -5,7 +5,8 @@
 -export([
     start_link/0,
     refresh/0,
-    token/0
+    token/0,
+    auth_headers/0
 ]).
 
 -export([
@@ -97,7 +98,7 @@ next_refresh(Expiration) ->
     Val = max(?REFRESH_ERROR_DELAY,
         (Expiration - epep_util:now(sec) - 60) * 1000),
     case Val of ?REFRESH_ERROR_DELAY ->
-        couch_log:info("~p next_refresh ~p", [?MODULE, Val]);
+        couch_log:debug("~p next_refresh ~p", [?MODULE, Val]);
         _ -> ok
     end,
     Val.
@@ -110,7 +111,7 @@ refresh(State) ->
         #{<<"access_token">> := Token, <<"expiration">> := Expiration} ->
             %% {ok, {Claims}} = epep:jwt_decode(Token),
             %% couch_log:info("~p claims ~p", [?MODULE, Claims]),
-            couch_log:info("~p new access token expires in ~p sec",
+            couch_log:debug("~p new access token expires in ~p sec",
                 [?MODULE, Expiration - epep_util:now(sec)]),
             State#state{expiration = Expiration, token = binary_to_list(Token)};
         Else ->
