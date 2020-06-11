@@ -5,7 +5,8 @@
 -export([
     start_link/0,
     refresh/0,
-    token/0
+    token/0,
+    auth_headers/0
 ]).
 
 -export([
