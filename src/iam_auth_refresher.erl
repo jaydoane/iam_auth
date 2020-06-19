@@ -9,7 +9,7 @@
 
 -export([
     start_link/1,
-    value/0
+    value/1
 ]).
 
 -include("refresher.hrl").
@@ -19,12 +19,12 @@ start_link(Config) ->
     refresher:start_link(?MODULE, Config).
 
 
-value() ->
-    refresher:value(?MODULE).
+value(Key) ->
+    refresher:value(?MODULE, Key).
 
 
 -spec refresh(Config :: map()) ->
-    {Value :: term(), ExpiresAfter :: second()} | {error, Error :: term()}.
+    {Values :: map(), ExpiresAfter :: second()} | {error, Error :: term()}.
 refresh(#{} = Config) ->
     #{
         token_url := TokenUrl,
@@ -37,11 +37,9 @@ refresh(#{} = Config) ->
             ContentType = "application/x-www-form-urlencoded",
             Body = <<"access_token=", Token/binary>>,
             case refresher_session:refresh_cookie(SessionUrl, ContentType, Body) of
-                {Session, _SessionExpiresAfter} ->
-                    {#{
-                        token => Token,
-                        session => Session
-                    }, ExpiresAfter};
+                {SessionValues, _SessionExpiresAfter} ->
+                    Values = SessionValues#{token => Token},
+                    {Values, ExpiresAfter};
                 Error ->
                     {error, Error}
             end;
@@ -72,7 +70,6 @@ headers_body(ApiKey, Creds) ->
         {"Accept", "application/json"},
         {"Content-Type", "application/x-www-form-urlencoded"}
     ] ++ auth_headers(Creds),
-    %% Body = mochiweb_util:urlencode([
     Body = urlencode([
         {"grant_type", "urn:ibm:params:oauth:grant-type:apikey"},
         {"response_type", "cloud_iam"},

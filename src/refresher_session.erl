@@ -9,16 +9,16 @@
 -define(DEFAULT_MAX_AGE, "600"). % seconds, from couch_httpd_auth.erl
 
 
--spec refresh_cookie(Url :: string(), ContentType :: string(), Body :: string()) ->
-    {Session :: string(), ExpiresAfter :: second()} | {error, Error :: term()}.
+-spec refresh_cookie(Url :: string(), ContentType :: string(), Body :: iodata()) ->
+    {Values :: map(), ExpiresAfter :: second()} | term().
 refresh_cookie(Url, ContentType, Body) ->
     case request_cookie(Url, ContentType, Body) of
         Cookie when is_list(Cookie) ->
             Tokens = [string:strip(S) || S <- string:tokens(Cookie, ";")],
             Session = hd(Tokens),
-            {Session, max_age(props(Tokens))};
+            {#{session => Session}, max_age(props(Tokens))};
         Error ->
-            {error, Error}
+            Error
     end.
 
 

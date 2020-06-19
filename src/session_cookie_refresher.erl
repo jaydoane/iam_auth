@@ -9,7 +9,7 @@
 
 -export([
     start_link/1,
-    value/0
+    value/1
 ]).
 
 -include("refresher.hrl").
@@ -19,12 +19,12 @@ start_link(Config) ->
     refresher:start_link(?MODULE, Config).
 
 
-value() ->
-    refresher:value(?MODULE).
+value(Key) ->
+    refresher:value(?MODULE, Key).
 
 
 -spec refresh(Config :: map()) ->
-    {Value :: string(), ExpiresAfter :: second()} | {error, Error :: term()}.
+    {Values :: map(), ExpiresAfter :: second()} | term().
 refresh(#{} = Config) ->
     #{
         session_url := Url,

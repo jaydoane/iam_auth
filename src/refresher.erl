@@ -1,12 +1,13 @@
 -module(refresher).
 
--callback refresh(Config :: map()) -> ok.
+-callback refresh(Config :: map()) ->
+    {Values :: map(), ExpiresAfter :: second()} | {error, Error :: term()}.
 
 -behaviour(gen_server).
 
 -export([
     start_link/2,
-    value/1,
+    value/2,
     now/1
 ]).
 
@@ -19,14 +20,14 @@
     terminate/2
 ]).
 
--define(REFRESH_EXPIRATION_PERCENT, 90).
+-define(REFRESH_EXPIRATION_PERCENT, 5).
 
 -define(MINIMUM_REFRESH_SEC, 2).
 
 -define(MILLION, 1000000).
 
 -record(entry, {
-    key :: term(),
+    key :: atom(),
     value :: term()
 }).
 
@@ -37,8 +38,10 @@ start_link(Name, Config) when is_atom(Name), is_map(Config) ->
     gen_server:start_link({local, Name}, ?MODULE, [Name, Config], []).
 
 
-value(Name) ->
-    case ets:lookup(Name, value) of
+-spec value(Name :: atom(), Key :: atom()) ->
+    term().
+value(Name, Key) ->
+    case ets:lookup(Name, Key) of
         [#entry{value = Value}] ->
             Value;
         Else ->
@@ -106,8 +109,10 @@ refresh(#{} = State) ->
         name := Name,
         config := Config
     } = State,
-    {Value, ExpiresAfter} = Name:refresh(Config),
-    true = ets:insert(Name, #entry{key = value, value = Value}),
+    {Values, ExpiresAfter} = Name:refresh(Config),
+    maps:fold(fun(Key, Val, _Acc) ->
+        true = ets:insert(Name, #entry{key = Key, value = Val})
+    end, [], Values),
     State#{expires_after => ExpiresAfter}.
 
 
