@@ -14,5 +14,7 @@ start_link() ->
 
 
 init([]) ->
-    Children = [?CHILD(iam_auth_server, worker)],
+    Children = [
+        ?CHILD(iam_auth_simple_sup, supervisor)
+    ],
     {ok, {{one_for_one, 2, 10}, Children} }.
