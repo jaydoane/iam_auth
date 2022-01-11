@@ -2,98 +2,55 @@
 
 -export([
     start/0,
-    stop/0,
-    req/2,
-    req/3,
-    req/4,
-    req_token/3,
-    auth_session_cookie/3,
-    iam_session_cookie/1,
-    default_headers/0,
-    session_req/3,
-    session_req/4,
-    session_req/5
+    session_req/5,
+    token_req/5
 ]).
-
 
 start() ->
     application:start(iam_auth).
 
 
-stop() ->
-    application:stop(iam_auth).
+session_req(IamId, Url, Method, Body, Headers) when is_atom(IamId) ->
+    send_auth_req(session, IamId, Url, Method, Body, Headers).
 
 
-req(Url, Method) ->
-    req(Url, Method, []).
-
-
-req(Url, Method, Body) ->
-    req(Url, Method, Body, []).
-
-
-req(Url, Method, Body, Headers) ->
-    req(Url, Method, Body, Headers, []).
-
-
-req(Url, Method, Body, Headers0, Opts) ->
-    Headers = default_headers() ++ Headers0,
-    send_req(Url, Method, Body, Headers, Opts).
-
-
-default_headers() ->
-    json_headers() ++ iam_auth_server:auth_headers().
-
-
-session_req(Cookie, Url, Method) ->
-    session_req(Cookie, Url, Method, []).
-
-
-session_req(Cookie, Url, Method, Body) ->
-    session_req(Cookie, Url, Method, Body, []).
-
-
-session_req(Cookie, Url, Method, Body, Headers0) ->
-    Headers = [{"Cookie", Cookie} | json_headers()] ++ Headers0,
-    req(Url, Method, Body, Headers).
-
-
-iam_session_cookie(Url) ->
-    Body = "access_token=" ++ iam_auth_server:token(),
-    session_cookie(Url ++ "/_iam_session", Body).
-
-
-auth_session_cookie(Url, User, Pass) ->
-    Body = "name=" ++ User ++ "&password=" ++ Pass,
-    session_cookie(Url ++ "/_session", Body).
-
-
-req_token(Url, Creds, ApiKey) ->
-    {ReqHeaders, ReqBody} = epep_util:token_req_headers_body(ApiKey, Creds),
-    Opts = [{response_format, binary}],
-    case ibrowse:send_req(Url, ReqHeaders, post, ReqBody, Opts) of
-        {ok, "200", _, RspBody} ->
-            jiffy:decode(RspBody, [return_maps]);
-        Error ->
-            Error
-    end.
+token_req(IamId, Url, Method, Body, Headers) when is_atom(IamId) ->
+    send_auth_req(token, IamId, Url, Method, Body, Headers).
 
 
 %% private
 
 
-json_headers() ->
-    [
-        {"Accept", "application/json"},
-        {"Content-Type", "application/json"}
-    ].
+send_auth_req(TokenOrSession, IamId, Url, Method, Body, Headers0) ->
+    AuthVal = wait_val(IamId, TokenOrSession),
+    Headers = [
+        auth_header(AuthVal),
+        {"X-Cloudant-User", username(IamId)}
+    ] ++ Headers0,
+    send_req(Url, Method, Body, Headers, []).
 
 
-session_cookie(Url, Body) ->
-    Headers = [{"Content-Type", "application/x-www-form-urlencoded"}],
-    {ok, 200, RspHeaders, _} = send_req(Url, post, Body, Headers, []),
-    Cookie = proplists:get_value("Set-Cookie", RspHeaders),
-    hd(string:tokens(Cookie, ";")).
+wait_val(IamId, TokenOrSession)
+    when TokenOrSession =:= session orelse TokenOrSession =:= token
+->
+    whereis(IamId) =/= undefined orelse iam_auth_simple_sup:add(IamId),
+    test_util:wait(fun() ->
+        case fresh_iam_auth:value(IamId, TokenOrSession) of
+            {ok, Val} -> Val;
+            _ -> wait
+        end
+    end).
+
+
+username(IamId) when is_atom(IamId) ->
+    [Username, _] = string:tokens(atom_to_list(IamId), ":"),
+    Username.
+
+
+auth_header(<<"IAMSession=", _/binary>> = Cookie) ->
+    {"Cookie", binary_to_list(Cookie)};
+auth_header(<<"Bearer ", _/binary>> = Token) ->
+    {"Authorization", binary_to_list(Token)}.
 
 
 send_req(Url, Method, Body, Headers, Opts0) ->
