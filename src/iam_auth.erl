@@ -21,8 +21,8 @@ token_req(IamId, Url, Method, Body, Headers) when is_atom(IamId) ->
 %% private
 
 
-send_auth_req(TokenOrSession, IamId, Url, Method, Body, Headers0) ->
-    AuthVal = wait_val(IamId, TokenOrSession),
+send_auth_req(AuthType, IamId, Url, Method, Body, Headers0) ->
+    AuthVal = wait_val(IamId, AuthType),
     Headers = [
         auth_header(AuthVal),
         {"X-Cloudant-User", username(IamId)}
@@ -30,12 +30,12 @@ send_auth_req(TokenOrSession, IamId, Url, Method, Body, Headers0) ->
     send_req(Url, Method, Body, Headers, []).
 
 
-wait_val(IamId, TokenOrSession)
-    when TokenOrSession =:= session orelse TokenOrSession =:= token
+wait_val(IamId, AuthType)
+    when AuthType =:= session orelse AuthType =:= token
 ->
     whereis(IamId) =/= undefined orelse iam_auth_simple_sup:add(IamId),
     test_util:wait(fun() ->
-        case fresh_iam_auth:value(IamId, TokenOrSession) of
+        case fresh_iam_auth:value(IamId, AuthType) of
             {ok, Val} -> Val;
             _ -> wait
         end
